@@ -38,6 +38,7 @@ type Proxy struct {
 	pingInterval           time.Duration
 	pingWait               time.Duration
 	pongWait               time.Duration
+	s                      *Server
 }
 
 // Logger collects log messages.
@@ -135,13 +136,14 @@ func defaultHeaderForwarder(header string) bool {
 //   Authorization: Bearer foobar
 //
 // Method can be overwritten with the MethodOverrideParam get parameter in the requested URL
-func WebsocketProxy(h http.Handler, opts ...Option) http.Handler {
+func WebsocketProxy(h http.Handler, s *Server, opts ...Option) http.Handler {
 	p := &Proxy{
 		h:                   h,
 		logger:              logrus.New(),
 		methodOverrideParam: MethodOverrideParam,
 		tokenCookieName:     TokenCookieName,
 		headerForwarder:     defaultHeaderForwarder,
+		s:                   s,
 	}
 	for _, o := range opts {
 		o(p)
@@ -179,6 +181,12 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+
+	err = p.s.Handle(r.Context(), conn)
+	if err != nil {
+		p.logger.Warnln("error server handle:", err)
+		return
+	}
 
 	ctx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
