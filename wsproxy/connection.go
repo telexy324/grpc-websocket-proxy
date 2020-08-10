@@ -24,8 +24,6 @@ type Connection struct {
 	//started                  bool
 	disconnected          bool
 	onDisconnectListeners []DisconnectFunc
-	//onNativeMessageListeners []NativeMessageFunc
-	self     Emitter // pre-defined emitter than sends message to its self client
 	writerMu sync.Mutex
 }
 
@@ -36,8 +34,6 @@ func newConnection(ctx context.Context, s *Server, underlineConn *websocket.Conn
 		ctx:       ctx,
 		server:    s,
 	}
-
-	c.self = newEmitter(c, c.id)
 
 	return c
 }

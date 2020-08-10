@@ -90,8 +90,3 @@ func (s *Server) Disconnect(connID string) (err error) {
 	return
 }
 
-func (s *Server) emitMessage(from, to string, data []byte) {
-	if c, ok := s.getConnection(to); ok {
-		c.Write(websocket.TextMessage, data)
-	}
-}
