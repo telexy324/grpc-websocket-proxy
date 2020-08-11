@@ -182,7 +182,7 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	err = p.s.Handle(r.Context(), conn)
+	ctxNew, err := p.s.Handle(r.Context(), conn)
 	if err != nil {
 		p.logger.Warnln("error server handle:", err)
 		return
@@ -192,7 +192,7 @@ func (p *Proxy) proxy(w http.ResponseWriter, r *http.Request) {
 	defer cancelFn()
 
 	requestBodyR, requestBodyW := io.Pipe()
-	request, err := http.NewRequest(r.Method, r.URL.String(), requestBodyR)
+	request, err := http.NewRequestWithContext(ctxNew, r.Method, r.URL.String(), requestBodyR)
 	if err != nil {
 		p.logger.Warnln("error preparing request:", err)
 		return

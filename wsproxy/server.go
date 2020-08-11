@@ -22,15 +22,15 @@ func New() *Server {
 	}
 }
 
-func (s *Server) Handle(ctx context.Context, websocketConn *websocket.Conn) error {
-	c, err := s.HandleConnection(ctx, websocketConn)
+func (s *Server) Handle(ctx context.Context, websocketConn *websocket.Conn) (context.Context, error) {
+	c, ctxNew, err := s.HandleConnection(ctx, websocketConn)
 	if err != nil {
-		return err
+		return ctxNew, err
 	}
 	for i := range s.onConnectionListeners {
 		s.onConnectionListeners[i](c)
 	}
-	return nil
+	return ctxNew, nil
 }
 
 func (s *Server) addConnection(c *Connection) {
@@ -51,15 +51,16 @@ func (s *Server) getConnection(connID string) (*Connection, bool) {
 
 // wrapConnection wraps an underline connection to an iris websocket connection.
 // It does NOT starts its writer, reader and event mux, the caller is responsible for that.
-func (s *Server) HandleConnection(ctx context.Context, websocketConn *websocket.Conn) (*Connection, error) {
+func (s *Server) HandleConnection(ctx context.Context, websocketConn *websocket.Conn) (*Connection, context.Context, error) {
 	// use the config's id generator (or the default) to create a websocket client/connection id
 	cid := s.IDGenerator()
 	// create the new connection
 	c := newConnection(ctx, s, websocketConn, cid)
 	// add the connection to the Server's list
 	s.addConnection(c)
+	ctxNew := context.WithValue(ctx, "wsConnId", cid)
 
-	return c, nil
+	return c, ctxNew, nil
 }
 
 func (s *Server) OnConnection(cb ConnectionFunc) {
@@ -89,4 +90,3 @@ func (s *Server) Disconnect(connID string) (err error) {
 
 	return
 }
-
